@@ -32,6 +32,7 @@
     BOOL isHideVeryCommonActivated;
 	BOOL isTrackingLocation;
     BOOL isVibrationActivated;
+	BOOL showLureOnly;
 }
 
 @property(weak, nonatomic) IBOutlet UIButton *locationButton;
