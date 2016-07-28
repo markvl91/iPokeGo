@@ -31,6 +31,7 @@
     BOOL isFavNotificationActivated;
     BOOL isHideVeryCommonActivated;
 	BOOL isTrackingLocation;
+    BOOL isVibrationActivated;
 }
 
 @property(weak, nonatomic) IBOutlet UIButton *locationButton;
@@ -48,6 +49,7 @@
 
 @property(strong, nonatomic) NSArray *savedFavorite;
 @property(strong, nonatomic) NSArray *savedCommon;
+@property(strong, nonatomic) NSArray *animatedPokestopLured;
 
 @property(strong, nonatomic) NSDictionary *localization;
 @property(strong, nonatomic) NSDictionary *mapLocation;

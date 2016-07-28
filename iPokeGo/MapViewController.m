@@ -32,6 +32,10 @@
 	_pokestopsOnMap = [[NSMutableArray alloc] init];
 	_pokemonOnMap = [[NSMutableArray alloc] init];
 	
+    isVibrationActivated              = NO;
+    
+    [self loadAnimatedImages];
+    [self loadNavBar];
     [self initObserver];
     [self loadSavedData];
     [self loadLocalization];
@@ -66,8 +70,55 @@
     // Dispose of any resources that can be recreated.
 }
 
--(void)launchTimers {
-    if(![self.timerData isValid]) {
+-(void)loadNavBar
+{
+    self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName : [UIColor whiteColor]};
+    
+    UIImage* image = [UIImage imageNamed:@"logo_app.png"];
+    UIImageView *imageView = [[UIImageView alloc] initWithImage: image];
+    imageView.contentMode = UIViewContentModeScaleAspectFit;
+    CGRect frame = CGRectMake((self.view.center.x - 10), 0.0, 0, 20);
+    imageView.frame = frame;
+    
+    UIView* titleView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 20, 20)];
+    imageView.frame = titleView.bounds;
+    [titleView addSubview:imageView];
+    
+    self.navigationItem.titleView = imageView;
+}
+
+-(void)loadAnimatedImages
+{
+    self.animatedPokestopLured = [NSArray arrayWithObjects:[UIImage imageNamed:@"Pokespot-Lured_0023_Frame-1.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0022_Frame-2.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0021_Frame-3.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0020_Frame-4.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0019_Frame-5.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0018_Frame-6.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0017_Frame-7.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0016_Frame-8.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0015_Frame-9.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0014_Frame-10.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0013_Frame-11.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0012_Frame-12.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0011_Frame-13.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0010_Frame-14.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0009_Frame-15.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0008_Frame-16.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0007_Frame-17.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0006_Frame-18.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0005_Frame-19.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0004_Frame-20.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0003_Frame-21.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0002_Frame-22.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0001_Frame-23.png"],
+                                  [UIImage imageNamed:@"Pokespot-Lured_0000_Frame-24.png"], nil];
+}
+
+-(void)launchTimers
+{
+    if(![self.timerData isValid])
+    {
         NSLog(@"[+] Starting data timer...");
         self.timerData = [NSTimer scheduledTimerWithTimeInterval:5
                                                           target:self
@@ -251,6 +302,22 @@
         if(isHideVeryCommonActivated != [defaults boolForKey:@"display_common"]) {
             isHideVeryCommonActivated = [defaults boolForKey:@"display_common"];
             firstConnection = YES;
+    if([defaults objectForKey:@"norm_notification"] != nil)
+        isNormalNotificationActivated   = [defaults boolForKey:@"norm_notification"];
+    
+    if([defaults objectForKey:@"fav_notification"] != nil)
+        isFavNotificationActivated      = [defaults boolForKey:@"fav_notification"];
+    
+    if([defaults objectForKey:@"vibration"] != nil)
+        isVibrationActivated      = [defaults boolForKey:@"vibration"];
+
+    
+    if([defaults objectForKey:@"display_common"] != nil)
+    {
+        if(isHideVeryCommonActivated != [defaults boolForKey:@"display_common"])
+        {
+            isHideVeryCommonActivated       = [defaults boolForKey:@"display_common"];
+            firstConnection                 = YES;
         }
     }
     
@@ -385,12 +452,139 @@
 																							options:NSJSONReadingMutableContainers
 																							  error:&error];
                                    
-                                   if([self.display_pokemons_str isEqualToString:@"true"] && [jsonData[@"pokemons"] count] > 0) {
-									   [self buildPokemonAnnotations:jsonData[@"pokemons"]];
-								   }
-								   
-                                   if([self.display_pokestops_str isEqualToString:@"true"] && [jsonData[@"pokestops"] count] > 0) {
-									   [self buildPokestopAnnotations:jsonData[@"pokestops"]];
+                                   if([self.display_pokemons_str isEqualToString:@"true"])
+                                   {
+                                       BOOL annFound = NO;
+                                       self.pokemons = jsonData[@"pokemons"];
+                                       
+                                       if([self.pokemons count] > 0)
+                                       {
+                                           for (int i = 0; i < [self.pokemons count]; i++) {
+                                               
+                                               for (id<MKAnnotation> ann in self.mapview.annotations)
+                                               {
+                                                   annFound = NO;
+                                                   if ([ann isKindOfClass:[PokemonAnnotation class]])
+                                                   {
+                                                       PokemonAnnotation *myAnn = (PokemonAnnotation *)ann;
+                                                       if ((myAnn.coordinate.latitude == [self.pokemons[i][@"latitude"] floatValue]) && (myAnn.coordinate.longitude == [self.pokemons[i][@"longitude"] floatValue]))
+                                                       {
+                                                           annFound = YES;
+                                                           break;
+                                                       }
+                                                   }
+                                               }
+                                               
+                                               if (!annFound)
+                                               {
+                                                   PokemonAnnotation *point = [[PokemonAnnotation alloc] init];
+                                                   CLLocationCoordinate2D pokemonLocation = CLLocationCoordinate2DMake([self.pokemons[i][@"latitude"] floatValue], [self.pokemons[i][@"longitude"] floatValue]);
+
+                                                   NSString *disapearTime = [self.pokemons[i] valueForKey:@"disappear_time"];
+                                                   double milliTime = disapearTime.doubleValue;
+                                                   
+                                                   NSDate *date = [NSDate dateWithTimeIntervalSince1970:(milliTime / 1000)];
+                                                   
+                                                   NSCalendar *calendar = [NSCalendar currentCalendar];
+                                                   NSDateComponents *components = [calendar components:(NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond) fromDate:date];
+                                                   NSInteger hour   = [components hour];
+                                                   NSInteger minute = [components minute];
+                                                   NSInteger second = [components second];
+                                                   
+                                                   NSString *key    = [self.pokemons[i] objectForKey:@"pokemon_id"];
+                                                   
+                                                   BOOL isPokemonVeryCommonPokemon = [self isPokemonVeryCommon:[NSString stringWithFormat:@"%@", key]];
+                                                   
+                                                   if([date timeIntervalSinceNow] > 0.0)
+                                                   {
+                                                       if((isPokemonVeryCommonPokemon == YES) && (isHideVeryCommonActivated == YES))
+                                                       {
+                                                           // Nothing to do
+                                                           // Option "hide very common" activated and the pokemon is very common
+                                                       }
+                                                       else
+                                                       {
+                                                           point.hidePokemon    = isPokemonVeryCommonPokemon;
+                                                           point.spawnpointID   = [self.pokemons[i] objectForKey:@"spawnpoint_id"];
+                                                           point.expirationDate = date;
+                                                           
+                                                           point.coordinate     = pokemonLocation;
+                                                           point.title          = [self.localization objectForKey:[NSString stringWithFormat:@"%@", key]];
+                                                           point.subtitle       = [NSString localizedStringWithFormat:NSLocalizedString(@"Disappears at %02d:%02d:%02d", @"The hint in a annotation callout that indicates when a Pokémon disappears."), (int)hour, (int)minute, (int)second];
+                                                           point.pokemonID      = [[self.pokemons[i] valueForKey:@"pokemon_id"] intValue];
+                                                           
+                                                           [self.mapview addAnnotation:point];
+                                                           
+                                                           if(!firstConnection)
+                                                           {
+                                                               NSString *notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] was added to the map!", @"The hint that a certain Pokémon appeared on the map.") , point.title];
+                                                               if([self.savedFavorite count] > 0)
+                                                               {
+                                                                   isFav = NO;
+                                                                   for (NSString *pokemonID in self.savedFavorite) {
+                                                                       if ([pokemonID intValue] == [key intValue]) {
+                                                                           isFav = YES;
+                                                                           break;
+                                                                       }
+                                                                   }
+                                                               }
+                                                               
+                                                               if(isFav)
+                                                               {
+                                                                   NSLog(@"FAV Pokemon added on map !!");
+                                                                   
+                                                                   notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] your favorite pokemon was added to the map!", @"The hint that a favorite Pokémon appeared on the map.") , point.title];
+                                                                   
+                                                                   if(isFavNotificationActivated)
+                                                                   {
+                                                                       self.notification = [CWStatusBarNotification new];
+                                                                       self.notification.notificationLabelBackgroundColor = [UIColor colorWithRed:0.91 green:0.30 blue:0.24 alpha:1.0];;
+                                                                       self.notification.notificationLabelTextColor = [UIColor whiteColor];
+                                                                       
+                                                                       [pokemonFavAppearSound play];
+                                                                       if(isVibrationActivated)
+                                                                       {
+                                                                           AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+                                                                       }
+                                                                       
+                                                                       [self.notification displayNotificationWithMessage:notificationMessage forDuration:4.5f];
+                                                                       
+                                                                       __weak typeof(self) weakSelf = self;
+                                                                       self.notification.notificationTappedBlock = ^(void) {
+                                                                           [weakSelf.mapview showAnnotations:@[point] animated:YES];
+                                                                       };
+                                                                   }
+                                                               }
+                                                               else
+                                                               {
+                                                                   NSLog(@"Pokemon added on map %@", point.title);
+                                                                   if(isNormalNotificationActivated)
+                                                                   {
+                                                                       self.notification = [CWStatusBarNotification new];
+                                                                       [pokemonAppearSound play];
+                                                                       if(isVibrationActivated)
+                                                                       {
+                                                                           AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+                                                                       }
+                                                                       
+                                                                       [self.notification displayNotificationWithMessage:notificationMessage forDuration:4.5f];
+                                                                       
+                                                                       __weak typeof(self) weakSelf = self;
+                                                                       self.notification.notificationTappedBlock = ^(void) {
+                                                                           [weakSelf.mapview showAnnotations:@[point] animated:YES];
+                                                                       };
+                                                                   }
+                                                               }
+                                                               
+                                                               
+                                                           }
+                                                       }
+                                                       
+                                                   }
+                                               }
+                                               
+                                           }
+                                       }
                                    }
                                    
                                    if([self.display_gyms_str isEqualToString:@"true"] && [jsonData[@"gyms"] count] > 0) {
@@ -702,54 +896,63 @@
 					break;
 			}
 
-			UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"%d.png", annotationGym.guardPokemonID]]];
-			imageView.frame = CGRectMake(0, 0, 50, 50);
-			imageView.contentMode = UIViewContentModeScaleAspectFit;
-			view.leftCalloutAccessoryView = imageView;
-			view.image = gymImage;
-		}
-	}
-	else if ([annotation isKindOfClass:[PokestopAnnotation class]])
-	{
-		PokestopAnnotation *annotationPokestop = annotation;
-		NSString *lureStr = [NSString stringWithFormat:@"%@", annotationPokestop.lure];
-		
-		view = [mapView dequeueReusableAnnotationViewWithIdentifier:lureStr];
-		
-		if (!view) {
-			
-			view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:lureStr];
-			view.canShowCallout = YES;
-			
-			UIImage *pokestopImage = [UIImage imageNamed:@"Pstop.png"];
-			
-			if(![lureStr isEqualToString:@"none"])
-				pokestopImage = [UIImage imageNamed:@"PstopLured.png"];
-			
-			view.image = pokestopImage;
-		}
-	}
-	else if ([annotation isKindOfClass:[ScanAnnotation class]])
-	{
-		//ScanAnnotation *annotationScan = annotation;
-		
-		SVPulsingAnnotationView *pulsingView = (SVPulsingAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:@"scan"];
-		
-		if (!view) {
-			
-			pulsingView = [[SVPulsingAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"scan"];
-			pulsingView.canShowCallout = YES;
-			
-			CGPoint point = view.center;
-			point.x = (point.x + 20);
-			point.y = (point.y + 20);
-			
-			pulsingView.annotationColor = [UIColor colorWithRed:0.10 green:0.74 blue:0.61 alpha:1.0];
-		}
-		
-		return pulsingView;
-	}
-	
+                UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"%d.png", annotationGym.guardPokemonID]]];
+                imageView.frame = CGRectMake(0, 0, 50, 50);
+                imageView.contentMode = UIViewContentModeScaleAspectFit;
+                view.leftCalloutAccessoryView = imageView;
+                view.image = gymImage;
+            }
+        }
+        else if ([annotation isKindOfClass:[PokestopAnnotation class]])
+        {
+            PokestopAnnotation *annotationPokestop = annotation;
+            NSString *lureStr = [NSString stringWithFormat:@"%@", annotationPokestop.lure];
+            
+            view = [mapView dequeueReusableAnnotationViewWithIdentifier:lureStr];
+            
+            if (!view) {
+                
+                view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:lureStr];
+                view.canShowCallout = YES;
+                
+                UIImage *pokestopImage = [UIImage imageNamed:@"Pstop.png"];
+                
+                if(![lureStr isEqualToString:@"none"])
+                {
+                    UIImageView* animatedImageView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+                    animatedImageView.animationImages = self.animatedPokestopLured;
+                    animatedImageView.animationDuration = 1.0f;
+                    [animatedImageView setFrame:CGRectMake(0, 0, 30, 30)];
+                    [animatedImageView startAnimating];
+                    [view addSubview: animatedImageView];
+                }
+                
+                view.image = pokestopImage;
+            }
+        }
+        else if ([annotation isKindOfClass:[ScanAnnotation class]])
+        {
+            //ScanAnnotation *annotationScan = annotation;
+            
+            SVPulsingAnnotationView *pulsingView = (SVPulsingAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:@"scan"];
+            
+            if (!view) {
+                
+                pulsingView = [[SVPulsingAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"scan"];
+                pulsingView.canShowCallout = YES;
+                
+                CGPoint point = view.center;
+                point.x = (point.x + 20);
+                point.y = (point.y + 20);
+                
+                pulsingView.annotationColor = [UIColor colorWithRed:0.10 green:0.74 blue:0.61 alpha:1.0];
+            }
+            
+            return pulsingView;
+        }
+        
+    }
+    
     return view;
 }
 
