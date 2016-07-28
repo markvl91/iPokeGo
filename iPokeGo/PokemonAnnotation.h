@@ -15,4 +15,6 @@
 @property NSDate *expirationDate;
 @property NSString *spawnpointID;
 
+-(PokemonAnnotation *)initWithJson:(NSDictionary *)data;
+
 @end

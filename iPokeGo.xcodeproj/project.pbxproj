@@ -3189,9 +3189,14 @@
 				TargetAttributes = {
 					27F385571D4130B30004A1B3 = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = C6D6DBHW5C;
-						DevelopmentTeamName = "Dimitri Dessus";
+						DevelopmentTeam = 5HC6C66BE5;
+						DevelopmentTeamName = "Mark van Lagen (Personal Team)";
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+						};
 					};
 					27F385701D4130B30004A1B3 = {
 						CreatedOnToolsVersion = 8.0;
@@ -4381,7 +4386,7 @@
 				INFOPLIST_FILE = iPokeGo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.dimitri-dessus.iPokeGo";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mvl.iPokeGo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -4394,7 +4399,7 @@
 				INFOPLIST_FILE = iPokeGo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.dimitri-dessus.iPokeGo";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mvl.iPokeGo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -4456,7 +4461,7 @@
 				27F385841D4130B30004A1B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		27F385851D4130B30004A1B3 /* Build configuration list for PBXNativeTarget "iPokeGo" */ = {
 			isa = XCConfigurationList;
@@ -4465,7 +4470,7 @@
 				27F385871D4130B30004A1B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		27F385881D4130B30004A1B3 /* Build configuration list for PBXNativeTarget "iPokeGoTests" */ = {
 			isa = XCConfigurationList;
@@ -4474,7 +4479,7 @@
 				27F3858A1D4130B30004A1B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		27F3858B1D4130B30004A1B3 /* Build configuration list for PBXNativeTarget "iPokeGoUITests" */ = {
 			isa = XCConfigurationList;
@@ -4483,7 +4488,7 @@
 				27F3858D1D4130B30004A1B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

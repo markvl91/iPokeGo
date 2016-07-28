@@ -18,19 +18,19 @@
 #import "SVPulsingAnnotationView.h"
 #import "global.h"
 
-@interface MapViewController : UIViewController <MKMapViewDelegate, CLLocationManagerDelegate, UIPopoverControllerDelegate>
+@interface MapViewController : UIViewController <MKMapViewDelegate, CLLocationManagerDelegate, UIPopoverControllerDelegate, UIGestureRecognizerDelegate>
 {
     MKCoordinateRegion region;
     AVAudioPlayer *pokemonAppearSound;
-    AVAudioPlayer *pokemonFavAppearSound;
-    CLLocationCoordinate2D radar;
+	AVAudioPlayer *pokemonFavAppearSound;
+	CLLocationCoordinate2D radar;
     BOOL firstConnection;
     BOOL moved;
-    BOOL isFav;
     
     BOOL isNormalNotificationActivated;
     BOOL isFavNotificationActivated;
     BOOL isHideVeryCommonActivated;
+	BOOL isTrackingLocation;
 }
 
 @property(weak, nonatomic) IBOutlet UIButton *locationButton;
@@ -46,9 +46,6 @@
 @property(strong, nonatomic) NSTimer *timerData;
 @property(strong, nonatomic) NSTimer *timerDataCleaner;
 
-@property(strong, nonatomic) NSMutableArray *pokemons;
-@property(strong, nonatomic) NSMutableArray *pokestops;
-@property(strong, nonatomic) NSMutableArray *gyms;
 @property(strong, nonatomic) NSArray *savedFavorite;
 @property(strong, nonatomic) NSArray *savedCommon;
 
@@ -56,7 +53,6 @@
 @property(strong, nonatomic) NSDictionary *mapLocation;
 
 @property(strong, nonatomic) UIPopoverController *popover;
-@property(strong, nonatomic) CWStatusBarNotification *notification;
 
 
 -(IBAction)locationAction:(id)sender;

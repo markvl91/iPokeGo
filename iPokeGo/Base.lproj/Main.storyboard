@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11173.2" systemVersion="16A254g" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="grx-CZ-2cH">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11129.15" systemVersion="15F34" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="grx-CZ-2cH">
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11143.2"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11103.10"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -24,7 +24,7 @@
                                     <outlet property="delegate" destination="BYZ-38-t0r" id="CMF-dP-z3f"/>
                                 </connections>
                             </mapView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HkD-yX-MDg">
+                            <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HkD-yX-MDg">
                                 <constraints>
                                     <constraint firstAttribute="height" constant="50" id="N70-67-MYk"/>
                                     <constraint firstAttribute="width" constant="50" id="Nc5-FI-kjF"/>
@@ -710,17 +710,17 @@
     </scenes>
     <resources>
         <image name="1.png" width="80" height="60"/>
-        <image name="common" width="37" height="37"/>
+        <image name="common" width="50" height="50"/>
         <image name="distance" width="37" height="37"/>
-        <image name="favorite" width="37" height="37"/>
-        <image name="gym" width="37" height="37"/>
+        <image name="favorite" width="50" height="50"/>
+        <image name="gym" width="50" height="50"/>
         <image name="location" width="128" height="126"/>
-        <image name="notifications" width="37" height="37"/>
-        <image name="pokemon" width="37" height="37"/>
-        <image name="pokestop" width="37" height="37"/>
+        <image name="notifications" width="50" height="50"/>
+        <image name="pokemon" width="50" height="50"/>
+        <image name="pokestop" width="50" height="50"/>
         <image name="radar" width="75" height="74"/>
-        <image name="server" width="37" height="37"/>
-        <image name="settings" width="37" height="37"/>
+        <image name="server" width="50" height="50"/>
+        <image name="settings" width="50" height="50"/>
         <image name="time" width="37" height="37"/>
         <image name="timer" width="37" height="37"/>
     </resources>
