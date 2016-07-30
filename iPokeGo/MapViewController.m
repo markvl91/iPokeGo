@@ -119,6 +119,12 @@
 
 -(void)launchTimers
 {
+    UIApplication  *app = [UIApplication sharedApplication];
+    self.bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+        [app endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }];
+    
     if(![self.timerData isValid])
     {
         NSLog(@"[+] Starting data timer...");
@@ -160,6 +166,13 @@
 											 selector:@selector(refreshPokemons)
 												 name:@"RefreshPokemons"
 											   object:nil];
+	// Launch hack bacground mode
+	[[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(appBackgrounding:)
+												 name: UIApplicationDidEnterBackgroundNotification
+											   object: nil];
+	[[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(appForegrounding:)
+												 name: UIApplicationWillEnterForegroundNotification
+											   object: nil];
 	
 	UIPanGestureRecognizer *mapPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(userPannedMap)];
 	mapPanGesture.delegate = self;
@@ -445,6 +458,13 @@
 }
 
 -(void)loadData {
+    /*
+    NSTimeInterval backgroundTimeRemaining = [[UIApplication sharedApplication] backgroundTimeRemaining];
+    
+    if (backgroundTimeRemaining != DBL_MAX)
+        NSLog(@"Remaining time before background mode ending = %0.2f sec.", backgroundTimeRemaining);
+    */
+	
     //Loading in background
     
     /*************************************/
@@ -469,7 +489,7 @@
                                    NSDictionary *jsonData = [NSJSONSerialization JSONObjectWithData:data
 																							options:NSJSONReadingMutableContainers
 																							  error:&error];
-                                   
+								   
 								   if([self.display_pokemons_str isEqualToString:@"true"] && [jsonData[@"pokemons"] count] > 0) {
 									   [self buildPokemonAnnotations:jsonData[@"pokemons"]];
 								   }
@@ -594,6 +614,8 @@
 							
 							[notification displayNotificationWithMessage:notificationMessage forDuration:4.5f];
 							
+							[self launchNotification:newPokemonAnnotation.title isFav:isFav lat:[pokemon[@"latitude"] doubleValue] lng:[pokemon[@"longitude"] doubleValue]];
+							
 							__weak typeof(self) weakSelf = self;
 							notification.notificationTappedBlock = ^(void) {
 								[weakSelf.mapview showAnnotations:@[newPokemonAnnotation] animated:YES];
@@ -610,8 +632,7 @@
 	}
 }
 
--(NSString *)buildRequest
-{
+-(NSString *)buildRequest {
     // Build Request
     NSUserDefaults *defaults        = [NSUserDefaults standardUserDefaults];
     NSString *server_addr           = [defaults objectForKey:@"server_addr"];
@@ -959,7 +980,6 @@
                             [self.mapview removeAnnotation:annotation];
                         }];
                     }
-                    
 				} else if([annotation isKindOfClass:[PokestopAnnotation class]]) {
 					PokestopAnnotation *annotationPokestop = (PokestopAnnotation *)annotation;
 					if(showLureOnly && [annotationPokestop.lure isEqualToString:@"none"]) {
@@ -992,7 +1012,6 @@
     }
 }
 
-
 - (UILabel*)timeLabelForAnnotation:(PokemonAnnotation*)annotation withContainerFrame:(CGRect)frame {
     TimeLabel *timeLabel;
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"display_timer"]) {
@@ -1004,8 +1023,6 @@
     [timeLabel setDate:annotation.expirationDate];
     return timeLabel;
 }
-
-
 
 - (UILabel*)distanceLabelForAnnotation:(PokemonAnnotation*)annotation withContainerFrame:(CGRect)frame {
     CLLocation *pokemonLocation = [[CLLocation alloc] initWithLatitude:annotation.coordinate.latitude longitude:annotation.coordinate.longitude];
@@ -1021,6 +1038,72 @@
     DistanceLabel *distanceLabel = [[DistanceLabel alloc] initWithFrame:CGRectMake(-7, 45, 50, 10)];
     [distanceLabel setDistance:distance];
     return distanceLabel;
+}
+
+-(void)launchNotification:(NSString *)pokemonTitle isFav:(BOOL)fav lat:(double)lat lng:(double)lng {
+    NSString *message   = nil;
+    NSString *soundName = nil;
+    
+    if(fav)
+    {
+        message     = [NSString stringWithFormat:NSLocalizedString(@"[Pokemon] your favorite pokemon was added to the map!", @"The hint that a favorite Pokémon appeared on the map.") , pokemonTitle];
+        soundName   = @"favoritePokemon.mp3";
+    }
+    else
+    {
+        message = [NSString stringWithFormat:NSLocalizedString(@"[Pokemon] was added to the map!", @"The hint that a certain Pokémon appeared on the map.") , pokemonTitle];
+        soundName   = @"ding.mp3";
+    }
+    
+    NSDictionary *infoDict = [NSDictionary dictionaryWithObjects:@[[NSNumber numberWithDouble:lat], [NSNumber numberWithDouble:lng]] forKeys:@[@"latitude", @"longitude"]];
+    
+    UILocalNotification *localN         = [[UILocalNotification alloc] init];
+    localN.fireDate                     = [NSDate date];
+    localN.alertBody                    = message;
+    localN.timeZone                     = [NSTimeZone defaultTimeZone];
+    localN.soundName                    = soundName;
+    localN.userInfo                     = infoDict;
+    localN.applicationIconBadgeNumber   = [[UIApplication sharedApplication] applicationIconBadgeNumber] + 1;
+    
+    [[UIApplication sharedApplication] scheduleLocalNotification:localN];
+}
+
+#pragma mark - Receive local notification
+
+-(void)showAnnotationLocalNotif:(NSNotification *)notification
+{
+    CLLocationCoordinate2D coordinate;
+    coordinate.latitude     = [[notification.userInfo objectForKey:@"latitude"] doubleValue];
+    coordinate.longitude    = [[notification.userInfo objectForKey:@"longitude"] doubleValue];
+    
+    region.center = coordinate;
+    region.span.latitudeDelta   = MAP_SCALE_ANNOT;
+    region.span.longitudeDelta  = MAP_SCALE_ANNOT;
+    
+    [self.mapview setRegion:region animated:YES];
+}
+
+#pragma mark - Hack background mode
+
+//TODO: Find a legal way to make the background task infinite or more longer than 3min
+- (void)appBackgrounding:(NSNotification *)notification {
+    // This is an hack to run the app indefinitely in background mode
+    [self keepAlive];
+}
+
+- (void)keepAlive {
+    self.bgTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        [[UIApplication sharedApplication] endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+        [self keepAlive];
+    }];
+}
+
+- (void)appForegrounding: (NSNotification *)notification {
+    if (self.bgTask != UIBackgroundTaskInvalid) {
+        [[UIApplication sharedApplication] endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }
 }
 
 @end
