@@ -26,7 +26,7 @@
 	
 	self.coordinate     = pokemonLocation;
 	self.title          = [data objectForKey:@"name"];
-	self.subtitle       = [NSString localizedStringWithFormat:NSLocalizedString(@"Disappears at [time]", @"The hint in a annotation callout that indicates when a Pokémon disappears."), [dateFormatter stringFromDate:disappearDate]];
+	self.subtitle       = [NSString localizedStringWithFormat:NSLocalizedString(@"Disappears at", @"The hint in a annotation callout that indicates when a Pokémon disappears."), [dateFormatter stringFromDate:disappearDate]];
 	self.pokemonID      = [[data objectForKey:@"pokemon_id"] intValue];
 	
 	return self;

@@ -34,6 +34,7 @@
 	_pokemonOnMap = [[NSMutableArray alloc] init];
 	
     isVibrationActivated              = NO;
+    isViewOnlyFav                   = NO;
     
     [self loadAnimatedImages];
     [self loadNavBar];
@@ -299,9 +300,9 @@
     NSLog(@"[+] ----- LOAD SAVE DATA");
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	
-	self.savedFavorite = [defaults objectForKey:@"pokemon_favorite"];
-	self.savedCommon = [defaults objectForKey:@"pokemon_common"];
-    self.mapLocation = [defaults objectForKey:@"map_position"];
+	self.savedFavorite              = [defaults objectForKey:@"pokemon_favorite"];
+	self.savedCommon                = [defaults objectForKey:@"pokemon_common"];
+    self.mapLocation                = [defaults objectForKey:@"map_position"];
     
 	if([defaults objectForKey:@"norm_notification"] != nil) {
         isNormalNotificationActivated = [defaults boolForKey:@"norm_notification"];
@@ -310,6 +311,10 @@
 	if([defaults objectForKey:@"fav_notification"] != nil) {
         isFavNotificationActivated = [defaults boolForKey:@"fav_notification"];
 	}
+    
+    if([defaults objectForKey:@"vibration"] != nil) {
+        isVibrationActivated      = [defaults boolForKey:@"vibration"];
+    }
 	
     if([defaults objectForKey:@"display_common"] != nil) {
         if(isHideVeryCommonActivated != [defaults boolForKey:@"display_common"]) {
@@ -317,6 +322,14 @@
             firstConnection = YES;
 		}
 	}
+    
+    if([defaults objectForKey:@"display_onlyfav"] != nil) {
+        if(isViewOnlyFav != [defaults boolForKey:@"display_onlyfav"])
+        {
+            isViewOnlyFav       = [defaults boolForKey:@"display_onlyfav"];
+            firstConnection     = YES;
+        }
+    }
 	
 	if([defaults objectForKey:@"norm_notification"] != nil) {
 		isNormalNotificationActivated   = [defaults boolForKey:@"norm_notification"];
@@ -467,7 +480,6 @@
 								   
                                    if([self.display_gyms_str isEqualToString:@"true"] && [jsonData[@"gyms"] count] > 0) {
 									   [self buildGymAnnotations:jsonData[@"gyms"]];
-
                                    }
                                    
                                    firstConnection = NO;
@@ -552,9 +564,9 @@
 			
 			BOOL isPokemonVeryCommonPokemon = [self isPokemonVeryCommon:pokemonID];
 			BOOL isFav = [self isPokemonFavorite:pokemonID];
-			
+                                                           
 			if([newPokemonAnnotation.expirationDate timeIntervalSinceNow] > 0.0) {
-				if(!isPokemonVeryCommonPokemon || !isHideVeryCommonActivated) {
+				if(!(isPokemonVeryCommonPokemon && isHideVeryCommonActivated) && !(isViewOnlyFav && isFav)) {
 					
 					[self.mapview addAnnotation:newPokemonAnnotation];
 					[_pokemonOnMap addObject:newPokemonAnnotation.encounterID];
@@ -563,39 +575,40 @@
 						
 						NSLog(@"%@Pokemon added on map %@", isFav ? @"Favorite " : @"", newPokemonAnnotation.title);
 						
-						CWStatusBarNotification *notification = [CWStatusBarNotification new];
-						NSString *notificationMessage;
-						
-						if(isFav && isFavNotificationActivated) {
-							notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] your favorite pokemon was added to the map!", @"The hint that a favorite Pokémon appeared on the map.") , newPokemonAnnotation.title];
-						
-							notification.notificationLabelBackgroundColor = [UIColor colorWithRed:0.91 green:0.30 blue:0.24 alpha:1.0];;
-							notification.notificationLabelTextColor = [UIColor whiteColor];
+						if((isFav && isFavNotificationActivated) || isNormalNotificationActivated) {
+							CWStatusBarNotification *notification = [CWStatusBarNotification new];
+							NSString *notificationMessage;
 							
-							[pokemonFavAppearSound play];
-						} else if(isNormalNotificationActivated) {
-							notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] was added to the map!", @"The hint that a certain Pokémon appeared on the map.") , newPokemonAnnotation.title];
+							if(isFav) {
+								notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] your favorite pokemon was added to the map!", @"The hint that a favorite Pokémon appeared on the map.") , newPokemonAnnotation.title];
+							
+								notification.notificationLabelBackgroundColor = [UIColor colorWithRed:0.91 green:0.30 blue:0.24 alpha:1.0];;
+								notification.notificationLabelTextColor = [UIColor whiteColor];
+								
+								[pokemonFavAppearSound play];
+							} else {
+								notificationMessage = [NSString localizedStringWithFormat:NSLocalizedString(@"[Pokemon] was added to the map!", @"The hint that a certain Pokémon appeared on the map.") , newPokemonAnnotation.title];
 
-							[pokemonAppearSound play];
+								[pokemonAppearSound play];
+							}
+							
+							[notification displayNotificationWithMessage:notificationMessage forDuration:4.5f];
+							
+							__weak typeof(self) weakSelf = self;
+							notification.notificationTappedBlock = ^(void) {
+								[weakSelf.mapview showAnnotations:@[newPokemonAnnotation] animated:YES];
+							};
 						}
-						
+					
 						if(isVibrationActivated) {
 							AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
 						}
-						
-						[notification displayNotificationWithMessage:notificationMessage forDuration:4.5f];
-						
-						__weak typeof(self) weakSelf = self;
-						notification.notificationTappedBlock = ^(void) {
-							[weakSelf.mapview showAnnotations:@[newPokemonAnnotation] animated:YES];
-						};
 					}
 				}
 			}
 		}
 	}
 }
-
 
 -(NSString *)buildRequest
 {
@@ -686,96 +699,105 @@
 -(MKAnnotationView *)mapView:(MKMapView *)mapView viewForAnnotation:(id<MKAnnotation>)annotation {
     MKAnnotationView *view = nil;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	
-    if ((id<MKAnnotation>)annotation == mapView.userLocation) {
-		return nil;
-	}
-	
-	if([annotation isKindOfClass:[PokemonAnnotation class]]) {
-		PokemonAnnotation *annotationPokemon = annotation;
-		view = [mapView dequeueReusableAnnotationViewWithIdentifier:[NSString stringWithFormat:@"%d", annotationPokemon.pokemonID]];
-		
-		if (!view) {
-			UIButton *button    = [UIButton buttonWithType:UIButtonTypeCustom];
-			UIImage *btnImage   = [UIImage imageNamed:@"drive"];
-			button.frame = CGRectMake(0, 0, 30, 30);
-			[button setImage:btnImage forState:UIControlStateNormal];
-			
-			view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:[NSString stringWithFormat:@"%d",annotationPokemon.pokemonID]];
-			view.canShowCallout = YES;
-			view.rightCalloutAccessoryView = button;
-			
-			UIImage *spritesheet = [UIImage imageNamed : @"icons-hd.png"];
-			
-			int x = (annotationPokemon.pokemonID - 1) % SPRITESHEET_COLS * SPRITE_SIZE;
-			int y = annotationPokemon.pokemonID;
-			while(y % SPRITESHEET_COLS != 0) y++;
-			y = (y/SPRITESHEET_COLS - 1) * SPRITE_SIZE;
-			
-			CGRect cropRect = CGRectMake(x, y, SPRITE_SIZE, SPRITE_SIZE);
-			
-			CGImageRef imageRef = CGImageCreateWithImageInRect([spritesheet CGImage], cropRect);
-			view.image = [UIImage imageWithCGImage:imageRef];
-			
-			view.frame = CGRectMake(0, 0, IMAGE_SIZE*1.5, IMAGE_SIZE*1.5);
-			CGImageRelease(imageRef);
-			
-			if([defaults boolForKey:@"display_time"]) {
-				[view addSubview:[self timeLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
-			}
-			
-			if([defaults boolForKey:@"display_distance"]) {
-				[view addSubview:[self distanceLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
-			}
-			
-			
-		} else {
-			// TODO: Its just for 'live' view update when settings changed, probably need to optimise
-			for (UIView *subView in view.subviews) {
-				if ([subView isKindOfClass:[TimeLabel class]]) {
-					[subView removeFromSuperview];
-				}
-				if ([subView isKindOfClass:[DistanceLabel class]]) {
-					[subView removeFromSuperview];
-				}
-			}
-			
-			if([defaults boolForKey:@"display_time"]) {
-				[view addSubview:[self timeLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
-			}
-			
-			if([defaults boolForKey:@"display_distance"]) {
-				[view addSubview:[self distanceLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
-			}
-		}
-	} else if ([annotation isKindOfClass:[GymAnnotation class]]) {
-		GymAnnotation *annotationGym = annotation;
-		view = [mapView dequeueReusableAnnotationViewWithIdentifier:[NSString stringWithFormat:@"%d", annotationGym.gymsID]];
-		if (!view) {
-			view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:[NSString stringWithFormat:@"%d", annotationGym.gymsID]];
-			view.canShowCallout = YES;
-			UIImage *gymImage = [UIImage imageNamed:@"Gym.png"];
-			
-			switch (annotationGym.gymsID) {
-				case TEAM_BLUE:
-					gymImage = [UIImage imageNamed:@"Mystic.png"];
-					break;
-				case TEAM_RED:
-					gymImage = [UIImage imageNamed:@"Valor.png"];
-					break;
-				case TEAM_YELLOW:
-					gymImage = [UIImage imageNamed:@"Instinct.png"];
-					break;
-				default:
-					break;
-			}
-
-			UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"%d.png", annotationGym.guardPokemonID]]];
-			imageView.frame = CGRectMake(0, 0, 50, 50);
-			imageView.contentMode = UIViewContentModeScaleAspectFit;
-			view.leftCalloutAccessoryView = imageView;
-			view.image = gymImage;
-        } else if ([annotation isKindOfClass:[PokestopAnnotation class]]) {
+    if ((id<MKAnnotation>)annotation != mapView.userLocation) {
+        
+        if([annotation isKindOfClass:[PokemonAnnotation class]])
+        {
+            PokemonAnnotation *annotationPokemon = annotation;
+            view = [mapView dequeueReusableAnnotationViewWithIdentifier:[NSString stringWithFormat:@"%d",annotationPokemon.pokemonID]];
+            
+            if (!view) {
+                
+                UIButton *button    = [UIButton buttonWithType:UIButtonTypeCustom];
+                UIImage *btnImage   = [UIImage imageNamed:@"drive"];
+                button.frame = CGRectMake(0, 0, 30, 30);
+                [button setImage:btnImage forState:UIControlStateNormal];
+                
+                view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:[NSString stringWithFormat:@"%d",annotationPokemon.pokemonID]];
+                view.canShowCallout = YES;
+                view.rightCalloutAccessoryView = button;
+                
+                UIImage *largeImage = [UIImage imageNamed : @"icons-hd.png"];
+                
+                /* Spritesheet has 7 columns */
+                int x = (annotationPokemon.pokemonID - 1)%SPRITESHEET_COLS*SPRITE_SIZE;
+                
+                int y = annotationPokemon.pokemonID;
+                
+                while(y%SPRITESHEET_COLS != 0) y++;
+                
+                y = (y/SPRITESHEET_COLS - 1) * SPRITE_SIZE;
+                
+                CGRect cropRect = CGRectMake(x, y, SPRITE_SIZE, SPRITE_SIZE);
+                
+                CGImageRef imageRef = CGImageCreateWithImageInRect([largeImage CGImage], cropRect);
+                view.image = [UIImage imageWithCGImage:imageRef];
+                
+                view.frame = CGRectMake(0, 0, IMAGE_SIZE*1.5, IMAGE_SIZE*1.5);
+                CGImageRelease(imageRef);
+                
+                if([defaults boolForKey:@"display_time"]) {
+                    [view addSubview:[self timeLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
+                }
+                
+                if([defaults boolForKey:@"display_distance"]) {
+                    [view addSubview:[self distanceLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
+                }
+                
+                
+            } else {
+                // TODO: Its just for 'live' view update when settings changed, probably need to optimise
+                for (UIView *subView in view.subviews) {
+                    if ([subView isKindOfClass:[TimeLabel class]]) {
+                        [subView removeFromSuperview];
+                    }
+                    if ([subView isKindOfClass:[DistanceLabel class]]) {
+                        [subView removeFromSuperview];
+                    }
+                }
+                
+                if([defaults boolForKey:@"display_time"]) {
+                    [view addSubview:[self timeLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
+                }
+                
+                if([defaults boolForKey:@"display_distance"]) {
+                    [view addSubview:[self distanceLabelForAnnotation:annotationPokemon withContainerFrame:view.frame]];
+                }
+            }
+        }
+        else if ([annotation isKindOfClass:[GymAnnotation class]])
+        {
+            GymAnnotation *annotationGym = annotation;
+            view = [mapView dequeueReusableAnnotationViewWithIdentifier:[NSString stringWithFormat:@"%d",annotationGym.gymsID]];
+            if (!view) {
+                
+                view = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:[NSString stringWithFormat:@"%d",annotationGym.gymsID]];
+                view.canShowCallout = YES;
+                UIImage *gymImage = [UIImage imageNamed:@"Gym.png"];
+                
+                switch (annotationGym.gymsID) {
+                    case TEAM_BLUE:
+                        gymImage = [UIImage imageNamed:@"Mystic.png"];
+                        break;
+                    case TEAM_RED:
+                        gymImage = [UIImage imageNamed:@"Valor.png"];
+                        break;
+                    case TEAM_YELLOW:
+                        gymImage = [UIImage imageNamed:@"Instinct.png"];
+                        break;
+                    default:
+                        break;
+                }
+                
+                UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"%d.png", annotationGym.guardPokemonID]]];
+                imageView.frame = CGRectMake(0, 0, 50, 50);
+                imageView.contentMode = UIViewContentModeScaleAspectFit;
+                view.leftCalloutAccessoryView = imageView;
+                view.image = gymImage;
+            }
+        }
+        else if ([annotation isKindOfClass:[PokestopAnnotation class]])
+        {
             PokestopAnnotation *annotationPokestop = annotation;
             NSString *lureStr = [NSString stringWithFormat:@"%@", annotationPokestop.lure];
             
@@ -797,8 +819,9 @@
                     [animatedImageView startAnimating];
                     [view addSubview: animatedImageView];
                 }
-                
-                view.image = pokestopImage;
+				
+				view.image = pokestopImage;
+				view.frame = CGRectMake(0, 0, 30, 30);
             }
         }
         else if ([annotation isKindOfClass:[ScanAnnotation class]])
@@ -909,7 +932,7 @@
 		PokemonAnnotation *annotationPoke = (PokemonAnnotation *)annotation;
 		
 		annotationPoke.hidePokemon = [self isPokemonVeryCommon:[[NSNumber numberWithInt:annotationPoke.pokemonID] stringValue]];
-
+        annotationPoke.isFav       = [self isPokemonFavorite:[[NSNumber numberWithInt:annotationPoke.pokemonID] stringValue]];
 	}
 	
     [self.mapview removeAnnotations:annotations];
@@ -926,7 +949,7 @@
                 {
                     PokemonAnnotation *annotationPoke = (PokemonAnnotation *)annotation;
                     
-                    if([annotationPoke.expirationDate timeIntervalSinceNow] < 0.0 || (annotationPoke.hidePokemon == YES && isHideVeryCommonActivated == YES))
+                    if([annotationPoke.expirationDate timeIntervalSinceNow] < 0.0 || (annotationPoke.hidePokemon && isHideVeryCommonActivated) || (!annotationPoke.isFav && isViewOnlyFav))
                     {
 						if([annotationPoke.expirationDate timeIntervalSinceNow] < 0.0) {
 							NSLog(@"Pokemon expired %@", annotation.title);
@@ -969,21 +992,23 @@
     }
 }
 
+
 - (UILabel*)timeLabelForAnnotation:(PokemonAnnotation*)annotation withContainerFrame:(CGRect)frame {
     TimeLabel *timeLabel;
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"display_timer"]) {
-        timeLabel = [[TimerLabel alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 20)];
+        timeLabel = [[TimerLabel alloc] initWithFrame:CGRectMake(13, -1, 40, 10)];
     } else {
-        timeLabel = [[TimeLabel alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 20)];
+        timeLabel = [[TimeLabel alloc] initWithFrame:CGRectMake(13, -1, 40, 10)];
         
     }
     [timeLabel setDate:annotation.expirationDate];
     return timeLabel;
 }
 
+
+
 - (UILabel*)distanceLabelForAnnotation:(PokemonAnnotation*)annotation withContainerFrame:(CGRect)frame {
     CLLocation *pokemonLocation = [[CLLocation alloc] initWithLatitude:annotation.coordinate.latitude longitude:annotation.coordinate.longitude];
-    ;
     
     CLLocation *baseLocation = self.mapview.userLocation.location;
     
@@ -993,7 +1018,7 @@
 
     CLLocationDistance distance = [pokemonLocation distanceFromLocation:baseLocation];
     
-    DistanceLabel *distanceLabel = [[DistanceLabel alloc] initWithFrame:CGRectMake(0, frame.size.height - 20, frame.size.width, 20)];
+    DistanceLabel *distanceLabel = [[DistanceLabel alloc] initWithFrame:CGRectMake(-7, 45, 50, 10)];
     [distanceLabel setDistance:distance];
     return distanceLabel;
 }

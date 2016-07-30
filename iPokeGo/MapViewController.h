@@ -26,6 +26,7 @@
 	CLLocationCoordinate2D radar;
     BOOL firstConnection;
     BOOL moved;
+    //BOOL isFav;
     
     BOOL isNormalNotificationActivated;
     BOOL isFavNotificationActivated;
@@ -33,6 +34,7 @@
 	BOOL isTrackingLocation;
     BOOL isVibrationActivated;
 	BOOL showLureOnly;
+    BOOL isViewOnlyFav;
 }
 
 @property(weak, nonatomic) IBOutlet UIButton *locationButton;
