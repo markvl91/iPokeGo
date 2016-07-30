@@ -21,6 +21,7 @@
 	
 	self.hidePokemon    = NO;
 	self.spawnpointID   = [data objectForKey:@"spawnpoint_id"];
+	self.encounterID	= [data objectForKey:@"encounter_id"];
 	self.expirationDate = disappearDate;
 	
 	self.coordinate     = pokemonLocation;

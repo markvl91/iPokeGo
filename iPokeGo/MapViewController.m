@@ -544,7 +544,7 @@
 	for (int i = 0; i < [pokemonData count]; i++) {
 		NSDictionary *pokemon = pokemonData[i];
 		
-		if([_pokemonOnMap indexOfObject:[pokemon objectForKey:@"spawnpoint_id"]] == NSNotFound) {
+		if([_pokemonOnMap indexOfObject:[pokemon objectForKey:@"encounter_id"]] == NSNotFound) {
 			NSString *pokemonID = [[pokemon objectForKey:@"pokemon_id"] stringValue];
 			[pokemon setValue:[self.localization objectForKey:pokemonID] forKey:@"name"];
 			
@@ -557,7 +557,7 @@
 				if(!isPokemonVeryCommonPokemon || !isHideVeryCommonActivated) {
 					
 					[self.mapview addAnnotation:newPokemonAnnotation];
-					[_pokemonOnMap addObject:newPokemonAnnotation.spawnpointID];
+					[_pokemonOnMap addObject:newPokemonAnnotation.encounterID];
 					
 					if(!firstConnection) {
 						

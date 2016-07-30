@@ -14,6 +14,7 @@
 @property BOOL hidePokemon;
 @property NSDate *expirationDate;
 @property NSString *spawnpointID;
+@property NSString *encounterID;
 
 -(PokemonAnnotation *)initWithJson:(NSDictionary *)data;
 
