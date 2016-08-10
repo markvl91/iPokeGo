@@ -23,6 +23,10 @@
 @property(weak, nonatomic) IBOutlet UILabel *vibrationLabel;
 @property(weak, nonatomic) IBOutlet UISwitch *vibrationSwitch;
 
+@property(weak, nonatomic) IBOutlet UIImageView *inRangeImageView;
+@property(weak, nonatomic) IBOutlet UILabel *inRangeLabel;
+@property(weak, nonatomic) IBOutlet UISwitch *inRangeSwitch;
+
 -(IBAction)switchAction:(UISwitch *)sender;
 
 @end

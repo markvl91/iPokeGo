@@ -22,6 +22,7 @@
     self.normalNotificationSwitch.on = [prefs boolForKey:@"norm_notification"];
     self.favoriteNotificationSwitch.on = [prefs boolForKey:@"fav_notification"];
     self.vibrationSwitch.on = [prefs boolForKey:@"vibration"];
+    self.inRangeSwitch.on = [prefs boolForKey:@"only_notify_in_range"];
 }
 
 -(IBAction)switchAction:(UISwitch *)sender
@@ -34,6 +35,8 @@
         [prefs setBool:self.favoriteNotificationSwitch.on forKey:@"fav_notification"];
     } else if (sender == self.vibrationSwitch) {
         [prefs setBool:self.vibrationSwitch.on forKey:@"vibration"];
+    }else if (sender == self.inRangeSwitch) {
+        [prefs setBool:self.inRangeSwitch.on forKey:@"only_notify_in_range"];
     }
 }
 
