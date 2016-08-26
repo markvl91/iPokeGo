@@ -13,6 +13,12 @@
 #import "MapViewController.h"
 #import "iPokeServerSync.h"
 
+@interface iPokeServerSync()
+
+@property (strong, nonatomic) NSDate *previousRequest;
+
+@end
+
 @implementation iPokeServerSync
 
 static NSURLSession *iPokeServerSyncSharedSession;
@@ -99,6 +105,7 @@ static NSURLSession *iPokeServerSyncSharedSession;
         [self processPokemonFromJSON:jsonData[@"pokemons"] usingContext:context];
         [self processStopsFromJSON:jsonData[@"pokestops"] usingContext:context];
         [self processGymsFromJSON:jsonData[@"gyms"] usingContext:context];
+        self.previousRequest = [NSDate dateWithTimeIntervalSince1970:[jsonData[@"time"] intValue]];
         [[CoreDataPersistance sharedInstance] commitChangesAndDiscardContext:context];
     }];
     [task resume];
@@ -121,11 +128,18 @@ static NSURLSession *iPokeServerSyncSharedSession;
     NSString *display_pokemons_str   = display_pokemons ? @"true" : @"false";
     NSString *display_pokestops_str  = display_pokestops ? @"true" : @"false";
     NSString *display_gyms_str       = display_gyms ? @"true" : @"false";
-    
+    NSTimeInterval timeOfLastRequest;
+    if(self.previousRequest) {
+        timeOfLastRequest = self.previousRequest.timeIntervalSince1970;
+    } else {
+        timeOfLastRequest = 0;
+    }
+
     request = [request stringByReplacingOccurrencesOfString:@"%%server_addr%%" withString:server_addr];
     request = [request stringByReplacingOccurrencesOfString:@"%%pokemon_display%%" withString:display_pokemons_str];
     request = [request stringByReplacingOccurrencesOfString:@"%%pokestops_display%%" withString:display_pokestops_str];
     request = [request stringByReplacingOccurrencesOfString:@"%%gyms_display%%" withString:display_gyms_str];
+    request = [request stringByReplacingOccurrencesOfString:@"%%since_time%%" withString:[NSString stringWithFormat:@"%d", (int)timeOfLastRequest]];
     
     //NSLog(@"%@", request);
     
@@ -181,18 +195,6 @@ static NSURLSession *iPokeServerSyncSharedSession;
     NSArray *foundIdentifiers = [rawPokemon valueForKey:serverPrimaryKey];
     if (!foundIdentifiers) {
         foundIdentifiers = @[];
-    }
-    
-    NSFetchRequest *itemsToDeleteRequest = [[NSFetchRequest alloc] init];
-    [itemsToDeleteRequest setEntity:entity];
-    [itemsToDeleteRequest setPredicate:[NSPredicate predicateWithFormat:@"NOT (spawnpoint IN %@)" argumentArray:@[foundIdentifiers]]];
-    [itemsToDeleteRequest setIncludesPropertyValues:NO];
-    NSArray *itemsToDelete = [context executeFetchRequest:itemsToDeleteRequest error:nil];
-    if (itemsToDelete.count > 0) {
-        NSLog(@"Deleting %@ pokemon", @(itemsToDelete.count));
-    }
-    for (NSManagedObject *itemToDelete in itemsToDelete) {
-        [context deleteObject:itemToDelete];
     }
     
     //we can shortcut and save processing in the background with pokemon since they can't be updated, only added / removed

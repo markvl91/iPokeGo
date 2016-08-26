@@ -181,8 +181,7 @@
                 NSUserDefaults *prefs   = [NSUserDefaults standardUserDefaults];
                 if ([prefs boolForKey:@"fav_notification"] && [pokemon isFav]) {
                     [self displayNotificationForPokemon:pokemon];
-                }
-                if ([prefs boolForKey:@"norm_notification"] && !self.incomingIsFromNewConnection) {
+                } else if ([prefs boolForKey:@"norm_notification"] && !self.incomingIsFromNewConnection) {
                     [self displayNotificationForPokemon:pokemon];
                 }
                 

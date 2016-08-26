@@ -133,6 +133,9 @@ static NSTimeInterval AppDelegatServerRefreshFrequencyBackground = 20.0;
     [[NSRunLoop mainRunLoop] addTimer:self.dateUpdateTimer forMode:NSRunLoopCommonModes];
     
     if (!self.dataFetchTimer || self.dataFetchTimer.timeInterval == AppDelegatServerRefreshFrequencyBackground) {
+        if(self.dataFetchTimer) {
+            [self.dataFetchTimer invalidate];
+        }
         [self refreshDataFromServer];
         self.dataFetchTimer = [NSTimer timerWithTimeInterval:AppDelegatServerRefreshFrequency target:self selector:@selector(refreshDataFromServer) userInfo:nil repeats:YES];
         [[NSRunLoop mainRunLoop] addTimer:self.dataFetchTimer forMode:NSDefaultRunLoopMode];
